@@ -31,13 +31,13 @@ def get_connection():
     ]
     if missing:
         raise ValueError("資料庫環境變數缺失：" + ", ".join(missing))
-    settings = dict(
-        host=os.getenv("DB_HOST", ""),
-        port=int(os.getenv("DB_PORT") or "3306"),
-        database = os.getenv("DB_NAME", ""),
-        user=os.getenv("DB_USER", ""),
-        password=os.getenv("DB_PASSWORD", ""),
-    )
+    settings = {
+        "host": os.getenv("DB_HOST", ""),
+        "port": int(os.getenv("DB_PORT") or "3306"),
+        "database": os.getenv("DB_NAME", ""),
+        "user": os.getenv("DB_USER", ""),
+        "password": os.getenv("DB_PASSWORD", ""),
+    }
         
     return mysql.connector.connect(**settings)
 

@@ -83,7 +83,7 @@ def list_posts():
 
 # POST /api/posts：驗證文字與選填圖片、先上傳再寫入，失敗清理圖片，成功回傳 201 與留言資料
 @app.post("/api/posts", status_code=201)
-def create_post(content: str = Form(...), image: UploadFile | None = File(None)):
+def create_post(content: str = Form(...), image: UploadFile | None = File(None)):  # noqa: B008
     # 同步路由由 FastAPI 在執行緒池執行，避免 MySQL / S3 阻塞事件迴圈。
     content = validate_content(content)
     image_key = None
