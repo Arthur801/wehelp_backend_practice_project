@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圖文留言板</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <main class="message-board">
+        <h1>發表一篇圖文</h1>
+        <form id="post-form" action="/api/posts" method="post" enctype="multipart/form-data">
+            <div class="form-row">
+                <label for="content">文字內容</label>
+                <input id="content" name="content" type="text" required>
+            </div>
+            <div class="form-row">
+                <label for="image">圖片檔案</label>
+                <input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp">
+            </div>
+            <button type="submit">送出</button>
+        </form>
+        <p id="status" role="status" aria-live="polite" hidden></p>
+        <section id="posts" aria-label="留言列表" aria-busy="true"></section>
+    </main>
+    <script>
+        const form = document.querySelector("#post-form");
+        const posts = document.querySelector("#posts");
+        const status = document.querySelector("#status");
+        const submitButton = form.querySelector("button");
+
+        function showStatus(message) {
+            status.textContent = message;
+            status.hidden = !message;
+        }
+
+        async function loadPosts() {
+            posts.setAttribute("aria-busy", "true");
+            try {
+                const response = await fetch("/api/posts");
+                if (!response.ok) throw new Error("留言載入失敗，請稍後重新整理。");
+                const data = await response.json();
+                const fragment = document.createDocumentFragment();
+                for (const post of data.posts) {
+                    const article = document.createElement("article");
+                    article.className = "post";
+                    const content = document.createElement("p");
+                    content.textContent = post.content;
+                    article.append(content);
+                    if (post.image_url) {
+                        const image = document.createElement("img");
+                        image.src = post.image_url;
+                        image.alt = post.content;
+                        image.loading = "lazy";
+                        article.append(image);
+                    }
+                    fragment.append(article);
+                }
+                posts.replaceChildren(fragment);
+            } finally {
+                posts.setAttribute("aria-busy", "false");
+            }
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const content = form.elements.content.value.trim();
+            if (!content) {
+                showStatus("請輸入文字內容。");
+                form.elements.content.focus();
+                return;
+            }
+            const data = new FormData(form);
+            data.set("content", content);
+            if (!form.elements.image.files.length) data.delete("image");
+            submitButton.disabled = true;
+            showStatus("送出中…");
+            try {
+                const response = await fetch(form.action, { method: "POST", body: data });
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(typeof error.detail === "string" ? error.detail : "送出失敗，請稍後再試。");
+                }
+                form.reset();
+                showStatus("留言已送出。");
+                try {
+                    await loadPosts();
+                } catch {
+                    showStatus("留言已送出，但列表更新失敗，請重新整理。");
+                }
+            } catch (error) {
+                showStatus(error.message || "送出失敗，請稍後再試。");
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+
+        loadPosts().catch(() => showStatus("留言載入失敗，請稍後重新整理。"));
+    </script>
+</body>
+</html>
