@@ -7,10 +7,12 @@ body {
     color: #000;
     background: #fff;
     font-family: "Times New Roman", serif;
-    font-size: 12px;
+    font-size: 16px;
 }
 
 .message-board {
+    max-width: 734px;
+    margin-inline: auto;
     min-height: calc(100vh - 6px);
     padding: 6px;
     border: 1px solid #d6d6d6;
@@ -18,7 +20,7 @@ body {
 
 h1 {
     margin: 8px 0 14px;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 19px;
 }
 
@@ -38,23 +40,24 @@ label {
     flex-shrink: 0;
 }
 
+input,
+button {
+    font: inherit;
+}
+
 input[type="text"] {
     width: 130px;
-    height: 16px;
     padding: 0 2px;
 }
 
 input[type="file"] {
     min-width: 0;
     max-width: 100%;
-    font-size: 10px;
 }
 
 button {
     display: block;
     padding: 0 5px;
-    font-size: 10px;
-    line-height: 14px;
 }
 
 #status {
