@@ -1,15 +1,9 @@
 # 匯入 MySQL 套件與資料庫設定
 import logging
-import os
-from pathlib import Path
 
 import mysql.connector
-from dotenv import load_dotenv
 
 import config
-
-# 載入本機環境變數
-load_dotenv(Path(__file__).resolve().parent / ".env")
 
 logger = logging.getLogger(__name__)
 
@@ -23,40 +17,44 @@ def _close_resources(cursor, connection) -> None:
             except Exception:
                 logger.exception("Failed to close database resource")
 
-# get_connection：建立 MySQL 連線
-def get_connection():
+def _connection_settings() -> dict:
+    # 初始化與一般連線共用同一份設定及驗證。
     missing = [
         name for name in ("DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD")
         if not getattr(config, name)
     ]
     if missing:
         raise ValueError("資料庫環境變數缺失：" + ", ".join(missing))
-    settings = {
-        "host": os.getenv("DB_HOST", ""),
-        "port": int(os.getenv("DB_PORT") or "3306"),
-        "database": os.getenv("DB_NAME", ""),
-        "user": os.getenv("DB_USER", ""),
-        "password": os.getenv("DB_PASSWORD", ""),
+    return {
+        "host": config.DB_HOST,
+        "port": config.DB_PORT,
+        "user": config.DB_USER,
+        "password": config.DB_PASSWORD,
+        "charset": "utf8mb4",
+        "autocommit": False,
     }
-        
-    return mysql.connector.connect(**settings)
 
 
-# 初始化資料庫
+# get_connection：建立 MySQL 連線
+def get_connection():
+    return mysql.connector.connect(**_connection_settings(), database=config.DB_NAME)
+
+
+# 初始化資料庫；尚未建庫時不指定 connection 的 database。
 def init_database() -> None:
     connection = mysql.connector.connect(
-        host=os.getenv("DB_HOST", ""),
-        port=int(os.getenv("DB_PORT") or "3306"),
-        user=os.getenv("DB_USER", ""),
-        password=os.getenv("DB_PASSWORD", ""),
+        host=config.DB_HOST,
+        user=config.DB_USER,
+        password=config.DB_PASSWORD,
     )
     cursor = None
     try:
         cursor = connection.cursor()
         # SQL 識別字不能使用值參數，須將反引號跳脫。
-        database_name = os.getenv("DB_NAME")
+        database_name = config.DB_NAME.replace("`", "``")
         cursor.execute(
             f"CREATE DATABASE IF NOT EXISTS `{database_name}` "
+            "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
         )
         cursor.execute(f"USE `{database_name}`")
         cursor.execute(
@@ -66,7 +64,7 @@ def init_database() -> None:
                 content TEXT NOT NULL,
                 image_key VARCHAR(500) NULL,
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
+            ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             """
         )
         connection.commit()

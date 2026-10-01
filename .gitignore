@@ -222,3 +222,6 @@ tests/
 
 # docs
 Docs/
+
+# docker
+.dockerignore
